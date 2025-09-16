@@ -11,19 +11,13 @@ export default function Dashboard() {
   const [aiStatus, setAiStatus] = useState("OFF");
   const [isConnected, setIsConnected] = useState(false);
 
-  // ✅ Connect MQTT
-  // useEffect(() => {
-  //   const client = mqtt.connect("wss://broker.emqx.io:8084/mqtt");
-  //   client.on("connect", () => {
-  //     setIsConnected(true);
-  //     client.subscribe("mining/solar");
-  //   });
-  //   client.on("message", (topic, message) => {
-  //     setMqttData(JSON.parse(message.toString()));
-  //   });
-  //   client.on("close", () => setIsConnected(false));
-  //   return () => client.end();
-  // }, []);
+  // Example: fetch AI pump status from backend API
+  useEffect(() => {
+    fetch("http://127.0.0.1:5000/api/status")
+      .then((res) => res.json())
+      .then((data) => setAiStatus(data.pump_status || "OFF"))
+      .catch(() => setAiStatus("OFF"));
+  }, []);
 
   return (
     <div className="min-h-screen bg-black text-gray-200 p-6">
@@ -57,7 +51,6 @@ export default function Dashboard() {
         <div className="bg-gray-900 p-4 rounded-lg">
           <h2 className="text-sm text-gray-400 mb-2">Water Level</h2>
           <div className="flex items-center gap-4">
-            {/* Droplet level indicator */}
             <div className="relative w-6 h-16 bg-gray-700 rounded-full overflow-hidden">
               <div
                 className="absolute bottom-0 w-full bg-blue-500"
@@ -66,9 +59,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-2xl font-bold">{mqttData.water || 0} cm</p>
-              <p className="text-xs text-gray-400">
-                Auto: ON ≥80cm, OFF ≤20cm
-              </p>
+              <p className="text-xs text-gray-400">Auto: ON ≥80cm, OFF ≤20cm</p>
             </div>
           </div>
         </div>
@@ -105,13 +96,37 @@ export default function Dashboard() {
 
       {/* Manual Control */}
       <div className="flex gap-4 mb-8">
-        <button className="flex items-center gap-2 px-6 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-700">
+        <button
+          className="flex items-center gap-2 px-6 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-700"
+          onClick={() => {
+            fetch("http://127.0.0.1:5000/api/start-pump", { method: "POST" })
+              .then(res => res.json())
+              .then(data => {
+                console.log("Pump response:", data);
+                setAiStatus("Running");
+              })
+              .catch(err => console.error("Error:", err));
+          }}
+        >
           <Power size={18} /> Start Pump
         </button>
-        <button className="flex items-center gap-2 px-6 py-3 rounded-lg bg-red-600 hover:bg-red-700">
+
+        <button
+          className="flex items-center gap-2 px-6 py-3 rounded-lg bg-red-600 hover:bg-red-700"
+          onClick={() => {
+            fetch("http://127.0.0.1:5000/api/stop-pump", { method: "POST" })
+              .then(res => res.json())
+              .then(data => {
+                console.log("Pump response:", data);
+                setAiStatus("OFF");
+              })
+              .catch(err => console.error("Error:", err));
+          }}
+        >
           <Power size={18} /> Stop Pump
         </button>
       </div>
+
 
       {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
