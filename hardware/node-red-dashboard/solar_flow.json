@@ -1,0 +1,129 @@
+[
+    {
+        "id": "c23796ba55788d43",
+        "type": "tab",
+        "label": "Solar Dewatering Bridge",
+        "disabled": false,
+        "info": "Acts as a WebSocket-to-MQTT bridge for the Solar Dewatering project. It forwards commands from the React dashboard to the ESP32 and relays telemetry data from the ESP32 back to the dashboard."
+    },
+    {
+        "id": "3f02bdd633449079",
+        "type": "websocket in",
+        "z": "c23796ba55788d43",
+        "name": "Dashboard Commands IN",
+        "server": "7a7e7aa3726b7f26",
+        "client": "",
+        "x": 200,
+        "y": 100,
+        "wires": [
+            [
+                "b61511a374c91c4a"
+            ]
+        ]
+    },
+    {
+        "id": "b61511a374c91c4a",
+        "type": "mqtt out",
+        "z": "c23796ba55788d43",
+        "name": "To ESP32 (Manual Control)",
+        "topic": "mine/pump/manual",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "mqtt_broker",
+        "x": 500,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "735c65c391d9fc52",
+        "type": "mqtt in",
+        "z": "c23796ba55788d43",
+        "name": "From ESP32 (Telemetry)",
+        "topic": "mine/telemetry",
+        "qos": "0",
+        "datatype": "auto",
+        "broker": "mqtt_broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 200,
+        "y": 200,
+        "wires": [
+            [
+                "a576df25be356ddc",
+                "5201ad012134b303"
+            ]
+        ]
+    },
+    {
+        "id": "a576df25be356ddc",
+        "type": "websocket out",
+        "z": "c23796ba55788d43",
+        "name": "To Dashboard (Feedback)",
+        "server": "7a7e7aa3726b7f26",
+        "client": "",
+        "x": 490,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "5201ad012134b303",
+        "type": "debug",
+        "z": "c23796ba55788d43",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 440,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "7a7e7aa3726b7f26",
+        "type": "websocket-listener",
+        "path": "/mqtt",
+        "wholemsg": "false"
+    },
+    {
+        "id": "mqtt_broker",
+        "type": "mqtt-broker",
+        "name": "test.mosquitto.org",
+        "broker": "test.mosquitto.org",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]
