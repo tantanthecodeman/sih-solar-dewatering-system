@@ -9,7 +9,7 @@ class Config:
     DEBUG = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
     
     # AI Model settings
-    AI_MODEL_PATH = os.environ.get('AI_MODEL_PATH', 'pump_rf_realworld.pkl')
+    AI_MODEL_PATH = os.environ.get('AI_MODEL_PATH', 'pump_rf_realworld (2).pkl')
     CONTAINER_HEIGHT = float(os.environ.get('CONTAINER_HEIGHT', '6.0'))
     PUMP_ON_THRESHOLD = float(os.environ.get('PUMP_ON_THRESHOLD', '3.5'))
     
