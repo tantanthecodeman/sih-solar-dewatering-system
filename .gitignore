@@ -23,3 +23,5 @@ out/
 # Build / coverage
 dist/
 coverage/
+
+venv/
