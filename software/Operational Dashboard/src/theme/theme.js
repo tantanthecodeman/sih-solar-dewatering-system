@@ -11,13 +11,12 @@ import { linkStyles } from "./components/link";
 import { breakpoints } from "./foundations/breakpoints";
 import { globalStyles } from "./styles";
 
-// Combine all the theme parts into a single object
 export default extendTheme(
   {
-    breakpoints, // Add breakpoints
-    ...globalStyles, // Add global styles and colors
+    breakpoints, 
+    ...globalStyles,
   },
-  // Merge all component styles under a single 'components' key
+ 
   CardComponent,
   badgeStyles,
   buttonStyles,

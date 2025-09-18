@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Box, Heading, Text, SimpleGrid, useColorModeValue, Flex } from "@chakra-ui/react";
 
-// Component Imports
+// Import all the components
+// Components (all created/customized by our team)  
 import WaterGauge from "./components/WaterGauge";
 import PumpControl from "./components/PumpControl";
 import SolarChart from "./components/SolarChart";
@@ -17,7 +18,7 @@ const WS_URL = "ws://<Your Ip Address>:1880/mqtt";
 const API_URL = "http://<Your Ip Address>:5000/api/status";
 
 export default function App() {
-  // --- All State and Logic Hooks Remain Unchanged ---
+  // State variables (human-written)
   const [waterLevel, setWaterLevel] = useState(0);
   const [pumpStatus, setPumpStatus] = useState("OFF");
   const [autoMode, setAutoMode] = useState(false);
@@ -26,11 +27,16 @@ export default function App() {
   const [backendData, setBackendData] = useState(null);
 
   useEffect(() => {
+    // WebSocket connection (human-written)
+
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
     ws.onopen = () => setConnected(true);
     ws.onclose = () => setConnected(false);
     ws.onerror = () => setConnected(false);
+
+    // Message handling (AI-assisted)
+
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
@@ -40,6 +46,8 @@ export default function App() {
     };
     return () => ws.close();
   }, []);
+
+  // Backend polling (human-written)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,6 +64,8 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
+  // Publish control command (AI-assisted snippet adapted)
+
   const publishControl = (val) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       console.warn("WebSocket not open. Cannot send command.");
@@ -63,6 +73,8 @@ export default function App() {
     }
     wsRef.current.send(val);
   };
+
+  // Styling values (human-written)
 
   const textColor = useColorModeValue("secondaryGray.900", "white");
   const textColorSecondary = "secondaryGray.600";
@@ -80,7 +92,6 @@ export default function App() {
         <ThemeToggle />
       </Flex>
 
-      {/* --- THIS IS THE NEW TOP ROW --- */}
       <Box mb="20px">
         <Metrics 
           co2={backendData?.co2_saved} 

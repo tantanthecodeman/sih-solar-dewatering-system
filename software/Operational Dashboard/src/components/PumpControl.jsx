@@ -6,6 +6,8 @@ export default function PumpControl({ pumpStatus, publishControl, autoMode, setA
     <VStack align="start" spacing={4}>
       <Text color="secondaryGray.600" fontWeight="bold">Pump Control</Text>
 
+      {/* Manual Control Buttons (human-written) */}
+
       <HStack spacing={4} w="100%">
         <Button
           onClick={() => publishControl("ON")}
@@ -24,6 +26,8 @@ export default function PumpControl({ pumpStatus, publishControl, autoMode, setA
           Turn OFF
         </Button>
       </HStack>
+
+      {/* Auto (AI) Mode Switch (human layout, AI-assisted logic)*/}
 
       <FormControl display="flex" alignItems="center">
         <Switch

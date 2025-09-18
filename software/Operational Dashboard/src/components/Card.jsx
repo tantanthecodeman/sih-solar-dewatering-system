@@ -1,4 +1,4 @@
-import React from "react"; // <-- ADD THIS LINE
+import React from "react"; 
 import { Box, useStyleConfig } from "@chakra-ui/react";
 
 function Card(props) {

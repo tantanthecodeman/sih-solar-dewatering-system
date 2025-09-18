@@ -23,7 +23,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// Fetch Open-Meteo API
+// Human-written: API fetch function
+// AI-assisted: Minor optimization suggestion
+
 async function fetchSolarData(lat, lon) {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=direct_radiation,global_tilted_irradiance,temperature_2m,cloud_cover&timezone=auto`;
   const resp = await fetch(url);
@@ -31,24 +33,26 @@ async function fetchSolarData(lat, lon) {
   return await resp.json();
 }
 
+// Human-written: Main Dashboard Component
+// AI-assisted: Initial chart rendering structure, some layout suggestions
+
 export default function Page() {
   const latitude = 12.9716;
   const longitude = 77.5946;
   const locationName = "Bengaluru, India";
 
-  // Panel config
   const panelArea = 50; // m²
   const panelEfficiency = 0.18;
 
-  // Costs
   const energyCostPerKWh = 10;
   const waterCostPerCubicM = 5;
   const pumpFlowRate = 1; // m³ per kWh
   const fixedSetupCost = 47400;
   const rentingCost = 15000;
 
-  // Targets
   const waterTarget = 400; // daily target (m³)
+
+  // State hooks (human-written)
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [pumpStatus, setPumpStatus] = useState("Running");
@@ -62,10 +66,14 @@ export default function Page() {
   const [monthlyCosts, setMonthlyCosts] = useState([]);
   const [solarIrradiance, setSolarIrradiance] = useState(null);
 
+  // Human-written: Clock updater
+
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // AI-assisted: Data fetching & calculations
 
   useEffect(() => {
     async function loadData() {
@@ -76,7 +84,7 @@ export default function Page() {
         const now = new Date();
         const todayStr = now.toISOString().split("T")[0];
 
-        // Filter today's data
+       
         const todayHours = [];
         const todayIrr = [];
         hours.forEach((t, i) => {
@@ -87,12 +95,14 @@ export default function Page() {
         });
 
         // Convert irradiance (W/m²) → kWh (per hour)
+        
+        // Conversion & calculations (human-written formulas, AI-assisted mapping)
+
         const hourlyPower = todayIrr.map((irr) => {
-          const kWh = (irr * panelArea * panelEfficiency) / 1000; // kW for 1h = kWh
+          const kWh = (irr * panelArea * panelEfficiency) / 1000; 
           return kWh;
         });
 
-        // Daily generation
         const gen = hourlyPower.reduce((a, b) => a + b, 0);
         setTodayGeneration(gen.toFixed(2));
 
@@ -107,19 +117,19 @@ export default function Page() {
         const uptime = (water / waterTarget) * 100;
         setUptimePercent(Math.min(uptime, 100).toFixed(1));
 
-        // Efficiency (vs. max possible if panels were 100% efficient)
+        // Efficiency
         const theoreticalMax = todayIrr.reduce((sum, irr) => sum + (irr * panelArea) / 1000, 0);
         const eff = (gen / theoreticalMax) * 100;
         setEfficiencyPercent(Math.max(eff, 0).toFixed(1));
 
-        // Prepare hourly chart data
         const chartData = todayHours.map((t, i) => ({
           time: t.split("T")[1].slice(0, 5),
           power: hourlyPower[i].toFixed(2),
         }));
         setPumpPowerData(chartData);
 
-        // Costs
+        // Monthly costs (human-written calculation, AI-assisted formatting)
+
         const energyCost = gen * energyCostPerKWh;
         const consumedWaterCost = water * waterCostPerCubicM;
 
@@ -138,6 +148,8 @@ export default function Page() {
   }, []);
 
   const pieColors = ["#f97316", "#3b82f6"];
+
+  // Human-written: JSX layout, Tailwind classes, cards, headers
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -174,7 +186,7 @@ export default function Page() {
       </header>
 
       <main className="max-w-[1920px] mx-auto px-6 py-6">
-        {/* Status Cards */}
+        
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           <StatusCard icon={Sun} title="Solar Power" value={todayGeneration ?? "---"} unit="kWh" color="orange" />
           <StatusCard icon={Activity} title="Uptime" value={uptimePercent ?? "---"} unit="%" color="purple" />
@@ -183,7 +195,6 @@ export default function Page() {
           <StatusCard icon={MapPin} title="Location" value={locationName} unit="" color="orange" />
         </div>
 
-        {/* Gen & Water */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="bg-gradient-to-br from-orange-600 to-yellow-600 rounded-xl p-6 shadow-lg">
             <h4 className="text-xl font-semibold mb-2">Today's Generation</h4>
@@ -201,7 +212,7 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Charts & Costs */}
+        
         <div className="bg-gray-800 bg-opacity-50 rounded-xl p-6 shadow-lg mb-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center">
             <DollarSign className="h-6 w-6 mr-2" /> Revenue & Analytics
@@ -247,7 +258,7 @@ export default function Page() {
               </ResponsiveContainer>
             </div>
 
-            {/* Cost */}
+           
             <div className="bg-gray-900 rounded-xl p-4">
               <h4 className="text-sm mb-2">Monthly Costs</h4>
               <ul className="space-y-1 text-gray-300 text-sm">
@@ -269,6 +280,8 @@ export default function Page() {
     </div>
   );
 }
+
+// Human-written: small helper components
 
 const StatusCard = ({ icon: Icon, title, value, unit, color }) => {
   const colorMap = {

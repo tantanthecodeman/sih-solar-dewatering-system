@@ -1,14 +1,20 @@
 import React from "react";
 import { SimpleGrid, Icon, useColorModeValue } from "@chakra-ui/react";
-import { MdWbSunny, MdEco } from "react-icons/md"; // Import a sun icon
+import { MdWbSunny, MdEco } from "react-icons/md"; 
 import MiniStatistics from "./MiniStatistics";
 import IconBox from "./IconBox";
 
 export default function Metrics({ co2, solar, hybrid }) {
+
+  // Styling (human-written)
+
   const brandColor = useColorModeValue("brand.500", "white");
   const boxBg = useColorModeValue("secondaryGray.300", "whiteAlpha.100");
 
-  // Calculate Solar Contribution percentage
+  // Calculate the Total Solar Contribution percentage
+
+  // Derived values (AI-assisted snippet)
+  
   const solarContribution = 100 - (hybrid ?? 0);
 
   return (

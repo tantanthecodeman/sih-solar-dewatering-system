@@ -3,9 +3,18 @@ import { Box, Text, Heading, Flex, Tag } from "@chakra-ui/react";
 
 // In src/components/WaterGauge.jsx
 
+// 
+// WaterGauge Component
+
+// Human-written: Overall layout, labels, conditional logic
+// AI-assisted: Optional tag color logic (status mapping) suggestion
+
 export default function WaterGauge({ level, percentage }) {
-  // CORRECTED LOGIC FOR DEWATERING
+  
   const getStatus = () => {
+
+    // Human-written thresholds
+    
     if (percentage == null || level < 0) return { text: "NO DATA", color: "gray" };
     if (percentage >= 85) return { text: "CRITICAL", color: "red" };
     if (percentage >= 60) return { text: "HIGH", color: "orange" };

@@ -1,71 +1,83 @@
 /*
-  ESP32 Solar Dewatering Firmware (Single-Threaded, Adjusted Logic)
-  - Logic adjusted to match the user's proven simple sketch.
-  - Features Active LOW relay control and a 3-count debounce for state changes.
-  - Time constants have been reduced for faster testing.
+  Solar Dewatering ESP32 Firmware
+
+  Attribution:
+
+  Human-Written / Reviewed:
+  - Code cleanup, formatting, and readability improvements
+  - Serial logging and debug message enhancements
+  - Minor adjustments to control logic for clarity
+  - Removal of unnecessary comments
+
+  AI-Assisted / Original Logic:
+  - Sensor reading functions (ultrasonic, solar, battery)
+  - Pump control logic (automatic ON/OFF based on water level and power)
+  - MQTT communication (connect, subscribe, publish, callback)
+  - Pin definitions, thresholds, and timing intervals
+  - Core loop structure and telemetry publishing
+
 */
 
 #include <Arduino.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
 
-// ---------- CONFIG (edit if needed) ----------
-const char* WIFI_SSID    = "<Name of Wifi Connected to ESP-32>";
-const char* WIFI_PASS    = "<Password>";
-const char* MQTT_BROKER  = "test.mosquitto.org";
+// WiFi and MQTT Configuration
+const char* WIFI_SSID = "<Your WiFi SSID>";
+const char* WIFI_PASS = "<Your WiFi Password>";
+const char* MQTT_BROKER = "test.mosquitto.org";
 const uint16_t MQTT_PORT = 1883;
 
-// MQTT topics
+// MQTT Topics
 const char* TOPIC_TELEMETRY = "mine/telemetry";
-const char* TOPIC_MANUAL    = "mine/pump/manual"; // payload: "ON" | "OFF" | "AUTO"
+const char* TOPIC_MANUAL = "mine/pump/manual";
 
-// ---------- PINS ----------
-const int TRIG_PIN      = 5;
-const int ECHO_PIN      = 18;
-const int RELAY_PIN     = 23;
+// Pin Definitions
+const int TRIG_PIN = 5;
+const int ECHO_PIN = 18;
+const int RELAY_PIN = 23;
 const int SOLAR_ADC_PIN = 34;
+const int BATTERY_ADC_PIN = 35;
 
-// ---------- PARAMETERS ----------
-float LEVEL_ON_CM  = 4.0f; // distance <= 4.0 cm => water high => START PUMP
-float LEVEL_OFF_CM = 7.0f; // distance >= 7.0 cm => water low => STOP PUMP
-const float SOLAR_ADC_SCALE   = 11.0f;
+// System Parameters
+float LEVEL_ON_CM = 4.0f;
+float LEVEL_OFF_CM = 7.0f;
 const float SOLAR_V_THRESHOLD = 4.5f;
-
-// Debounce logic from the working test sketch
+const float BATTERY_V_THRESHOLD = 3.2f; 
 const int REQUIRED_CONSECUTIVE = 3;
-int consecOn = 0;
-int consecOff = 0;
 
-// ---------- TIMINGS (Reduced for faster testing) ----------
-const unsigned long SENSOR_READ_INTERVAL_MS   = 250;  // Reduced from 500
+// Timings
+const unsigned long SENSOR_READ_INTERVAL_MS = 250;
 const unsigned long CONTROL_LOGIC_INTERVAL_MS = 100;
-const unsigned long TELEMETRY_INTERVAL_MS   = 2000; // Reduced from 5000
-const unsigned long MIN_PUMP_OFF_MS         = 5UL * 1000UL;   // Reduced from 20s
-const unsigned long MAX_PUMP_RUN_MS         = 30UL * 1000UL;  // Reduced from 3min
+const unsigned long TELEMETRY_INTERVAL_MS = 2000;
+const unsigned long MIN_PUMP_OFF_MS = 5UL * 1000UL;
+const unsigned long MAX_PUMP_RUN_MS = 30UL * 1000UL;
 
-// ---------- GLOBALS ----------
+// Global Variables
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
 
-// State variables
-float waterLevelCM  = -1.0f;
-float solarVoltage  = 0.0f;
-bool  pumpState     = false;
-String manualMode   = "AUTO";
+float waterLevelCM = -1.0f;
+float solarVoltage = 0.0f;
+float batteryVoltage = 0.0f;
+bool pumpState = false;
+String manualMode = "AUTO";
 
-// Timing variables
+int consecOn = 0;
+int consecOff = 0;
+
 unsigned long pumpLastChangedMs = 0;
-unsigned long pumpStartedAtMs   = 0;
-unsigned long lastSensorReadMs  = 0;
+unsigned long pumpStartedAtMs = 0;
+unsigned long lastSensorReadMs = 0;
 unsigned long lastControlUpdateMs = 0;
-unsigned long lastTelemetryMs   = 0;
+unsigned long lastTelemetryMs = 0;
 
-// ---------- FORWARD DECLARATIONS ----------
 void setPumpState(bool newState);
 void mqttConnect();
 
-// ---------- HELPER FUNCTIONS ----------
-unsigned long nowMs() { return millis(); }
+unsigned long nowMs() { 
+  return millis(); 
+}
 
 float measureDistanceCM() {
   digitalWrite(TRIG_PIN, LOW);
@@ -81,21 +93,24 @@ float measureDistanceCM() {
 float readSolarVoltage() {
   int raw = analogRead(SOLAR_ADC_PIN);
   float v_adc = raw * (3.3f / 4095.0f);
-  return v_adc * SOLAR_ADC_SCALE;
+  return v_adc * 11.0f; 
 }
 
-// ---------- MQTT & NETWORK ----------
+float readBatteryVoltage() {
+  int raw = analogRead(BATTERY_ADC_PIN);
+  float v_adc = raw * (3.3f / 4095.0f);
+  return v_adc * 2.0f; 
+}
+
 void setPumpState(bool newState) {
-    if (pumpState == newState) return; // No change needed
+    if (pumpState == newState) return;
 
     pumpState = newState;
-    // ACTIVE LOW LOGIC: LOW turns pump ON, HIGH turns pump OFF
     digitalWrite(RELAY_PIN, pumpState ? LOW : HIGH);
     pumpLastChangedMs = nowMs();
     if (pumpState) {
         pumpStartedAtMs = nowMs();
     }
-    // Reset debounce counters after any successful state change
     consecOn = 0;
     consecOff = 0;
     Serial.printf("Pump state set to: %s\n", pumpState ? "ON" : "OFF");
@@ -142,7 +157,7 @@ void connectWiFi() {
 void mqttConnect() {
   while (!mqttClient.connected()) {
     Serial.print("Connecting MQTT...");
-    String clientId = "ESP32-dewater-adjusted-" + String((uint32_t)esp_random(), HEX);
+    String clientId = "ESP32-dewater-" + String((uint32_t)esp_random(), HEX);
     if (mqttClient.connect(clientId.c_str())) {
       Serial.println("connected");
       mqttClient.subscribe(TOPIC_MANUAL);
@@ -155,35 +170,42 @@ void mqttConnect() {
   }
 }
 
-// ---------- MAIN LOGIC FUNCTIONS ----------
 void handleSensors() {
   waterLevelCM = measureDistanceCM();
   solarVoltage = readSolarVoltage();
+  batteryVoltage = readBatteryVoltage();
 }
 
 void handleControl() {
-  // 1. Safety Override: Max run time
   if (pumpState && (nowMs() - pumpStartedAtMs > MAX_PUMP_RUN_MS)) {
     Serial.println("Control: Max pump run reached -> forcing OFF");
     setPumpState(false);
   }
 
-  // 2. Manual Override Check
   if (manualMode != "AUTO") {
-    return; // Manual mode is active, MQTT callback handles the state
+    return;
   }
   
-  // 3. Automatic Control Logic with Debounce
   if (waterLevelCM < 0) {
     Serial.println("Measurement INVALID (timeout)");
     consecOn = 0;
     consecOff = 0;
-    return; // Invalid sensor reading, do nothing
+    return;
+  }
+  
+  bool canRunOnSolar = solarVoltage > SOLAR_V_THRESHOLD;
+  bool canRunOnBattery = batteryVoltage > BATTERY_V_THRESHOLD;
+
+  if (!canRunOnSolar && !canRunOnBattery) {
+    if (pumpState) {
+        Serial.println("Power sources depleted, turning pump OFF");
+        setPumpState(false);
+    }
+    return;
   }
   
   Serial.print("Measured: " + String(waterLevelCM, 2) + " cm");
 
-  // A. Water is high => count towards turning ON
   if (waterLevelCM <= LEVEL_ON_CM) {
     consecOn++;
     consecOff = 0;
@@ -195,7 +217,6 @@ void handleControl() {
       }
     }
   }
-  // B. Water is low => count towards turning OFF
   else if (waterLevelCM >= LEVEL_OFF_CM) {
     consecOff++;
     consecOn = 0;
@@ -207,13 +228,12 @@ void handleControl() {
       }
     }
   }
-  // C. Mid-range (dead band) => reset counters
   else {
     consecOn = 0;
     consecOff = 0;
     Serial.print(" | Mid-range");
   }
-  Serial.println(); // Newline for cleaner log
+  Serial.println();
 }
 
 void handleTelemetry() {
@@ -223,14 +243,14 @@ void handleTelemetry() {
   payload += "\"ts\":" + String(nowMs()) + ",";
   payload += "\"water_level_cm\":" + String(waterLevelCM, 2) + ",";
   payload += "\"solar_voltage\":" + String(solarVoltage, 2) + ",";
-  payload += "\"pump_status\":\"" + String(pStateStr ? "ON" : "OFF") + "\",";
+  payload += "\"battery_voltage\":" + String(batteryVoltage, 2) + ",";
+  payload += "\"pump_status\":\"" + pStateStr + "\",";
   payload += "\"manual_mode\":\"" + manualMode + "\"";
   payload += "}";
 
   mqttClient.publish(TOPIC_TELEMETRY, payload.c_str());
 }
 
-// ---------- SETUP & LOOP ----------
 void setup() {
   Serial.begin(115200);
   delay(200);
@@ -238,40 +258,35 @@ void setup() {
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
   pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN, HIGH); // Start with pump OFF (HIGH for Active LOW)
+  digitalWrite(RELAY_PIN, HIGH);
 
   connectWiFi();
   mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
   mqttClient.setCallback(mqttCallback);
-
   unsigned long now = nowMs();
   pumpLastChangedMs = now;
   pumpStartedAtMs = now;
 
-  Serial.println("Adjusted Solar Dewatering Firmware Initialized.");
+  Serial.println("Solar Dewatering Firmware Initialized.");
 }
 
 void loop() {
   unsigned long now = nowMs();
 
-  // Task 1: Maintain network and MQTT connection
   if (WiFi.status() != WL_CONNECTED) connectWiFi();
   if (!mqttClient.connected()) mqttConnect();
-  mqttClient.loop(); // Handles incoming messages and keep-alive
+  mqttClient.loop();
 
-  // Task 2: Read Sensors periodically
   if (now - lastSensorReadMs >= SENSOR_READ_INTERVAL_MS) {
     lastSensorReadMs = now;
     handleSensors();
   }
 
-  // Task 3: Run Control Logic periodically
   if (now - lastControlUpdateMs >= CONTROL_LOGIC_INTERVAL_MS) {
     lastControlUpdateMs = now;
     handleControl();
   }
 
-  // Task 4: Publish Telemetry periodically
   if (now - lastTelemetryMs >= TELEMETRY_INTERVAL_MS) {
     lastTelemetryMs = now;
     handleTelemetry();

@@ -1,36 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 🌞 Solar Pump Vendor Dashboard
 
-## Getting Started
+<p align="center">
+  <img src="dashboard-preview.png" alt="Vendor Dashboard Screenshot" width="800"/>
+</p>
 
-First, run the development server:
+A **Next.js-powered operational dashboard** for monitoring **solar pump performance, water delivery, and operational costs**.  
+It integrates **real-time weather & irradiance data** via the **Open-Meteo API** and provides actionable insights for vendors.
 
+---
+
+## 📌 Overview
+
+Vendors managing solar-powered pumps need **real-time insights** into how much energy is generated, water is delivered, and what the operational costs are.  
+This dashboard provides:
+
+- **Live monitoring** of solar generation & pump output  
+- **Cost breakdowns** for energy, water, and setup  
+- **Forecasting input** using **Open-Meteo solar irradiance data**  
+- **Analytics visualizations** with charts & KPIs  
+
+---
+
+## 🚀 Quick Start
+
+### 1. Install dependencies
+```bash
+npm install
+```
+### 2. Run development server
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+### 3. Open dashboard:
+Visit → http://localhost:3000
+
+## 🛠️ Tech Stack
+
+This project leverages a modern web development stack for real-time monitoring and control:
+
+- **[Next.js 13](https://nextjs.org/)** (App Router) → Server-side rendering, routing, and optimized build system.  
+- **[React](https://react.dev/)** → Component-based UI, hooks for state management, and efficient reactivity.  
+- **[Tailwind CSS](https://tailwindcss.com/)** → Utility-first styling for responsive and clean design.  
+- **[Recharts](https://recharts.org/en-US/)** → Interactive data visualizations including line charts, gauges, and pie charts.  
+- **[Lucide-react](https://lucide.dev/)** → Lightweight and modern icon library for UI elements.  
+- **[Open-Meteo API](https://open-meteo.com/)** → Provides live weather and solar irradiance data integrated into the dashboard.  
+
+## 🔌 External API Used
+
+### 🌍 Open-Meteo API
+We use the **[Open-Meteo API](https://open-meteo.com/)** (free, no API key required) to fetch live **solar and environmental conditions** for the dashboard.
+
+**Endpoint Example:**
+https://api.open-meteo.com/v1/forecast
+
+```arduino
+?latitude=12.9716
+&longitude=77.5946
+&hourly=direct_radiation,global_tilted_irradiance,temperature_2m,cloud_cover
+&timezone=auto
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Parameters Used:**
+- `direct_radiation` → Direct beam radiation (W/m²)  
+- `global_tilted_irradiance` → Irradiance adjusted for panel tilt (W/m²)  
+- `temperature_2m` → Air temperature (°C)  
+- `cloud_cover` → Cloud coverage (%)  
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## 📊 Dashboard Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. Header
+- Title + project branding  
+- Real-time clock (IST timezone)  
+- Pump status badge → **Running / Idle / Error**  
 
-## Learn More
+### 2. Status Cards
+- **Solar Power Generated (kWh)**  
+- **Uptime %** → vs. daily water target  
+- **Efficiency %** → actual vs. theoretical max  
+- **Water Delivered (m³)**  
+- **Location** → Configurable (Bengaluru by default)  
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Energy & Water
+- **Daily solar generation**  
+- **Peak irradiance (W/m²)**  
+- **Water delivery (m³)** vs. target  
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 4. Analytics & Revenue
+- **Line Chart** → Pump hourly power output  
+- **Pie Chart** → Energy source split (Solar vs Backup)  
+- **Cost Breakdown** → Fixed setup, renting, energy, water  
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## ⚙️ Configuration
+Edit values in `app/page.js`:
+```js
+// Location (default = Bengaluru, India)
+const latitude = 12.9716;
+const longitude = 77.5946;
 
-## Deploy on Vercel
+// Solar panel setup
+const panelArea = 50;       // m²
+const panelEfficiency = 0.18; // 18%
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+// Water pump
+const pumpFlowRate = 1;     // m³ per kWh
+const waterTarget = 400;    // Daily target (m³)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+// Costs
+const energyCostPerKWh = 10;     // ₹ per kWh
+const waterCostPerCubicM = 5;    // ₹ per m³
+const fixedSetupCost = 47400;    // ₹
+const rentingCost = 15000;       // ₹
+```
