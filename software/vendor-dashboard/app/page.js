@@ -1,310 +1,304 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect } from "react";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
+  Sun,
   Droplets,
-  Zap,
-  CloudSun,
   Activity,
-  RefreshCw,
-  Play,
-  StopCircle,
-  Cpu,
+  Clock,
+  DollarSign,
+  MapPin,
 } from "lucide-react";
+
 import {
-  ResponsiveContainer,
   LineChart,
   Line,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
 } from "recharts";
-import mqtt from "mqtt";
 
-// synthetic fallback data for testing
-const syntheticData = {
-  waterLevel: 2.5,
-  solarPower: 4.8,
-  co2Saved: 1.2,
-  energyMix: 65,
-  systemHealth: "Good",
-  demandForecast: [3.5, 4.2, 4.8, 5.0, 4.6, 4.1],
-  energyProduction: [4.5, 4.7, 5.2, 5.1, 4.8, 4.9],
-  weather: { temp: 28, condition: "Sunny" },
-  aiModel: { status: "Running", accuracy: "92%" },
-};
+// Fetch Open-Meteo API
+async function fetchSolarData(lat, lon) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=direct_radiation,global_tilted_irradiance,temperature_2m,cloud_cover&timezone=auto`;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error("Failed to fetch from Open-Meteo");
+  return await resp.json();
+}
 
-export default function EnhancedDashboard() {
-  const [data, setData] = useState(syntheticData);
-  const [loading, setLoading] = useState(true);
-  const [pumpState, setPumpState] = useState("Idle");
-  const [error, setError] = useState(null);
+export default function Page() {
+  const latitude = 12.9716;
+  const longitude = 77.5946;
+  const locationName = "Bengaluru, India";
 
-  // --- Backend Fetch (system + weather + AI) ---
+  // Panel config
+  const panelArea = 50; // m²
+  const panelEfficiency = 0.18;
+
+  // Costs
+  const energyCostPerKWh = 10;
+  const waterCostPerCubicM = 5;
+  const pumpFlowRate = 1; // m³ per kWh
+  const fixedSetupCost = 47400;
+  const rentingCost = 15000;
+
+  // Targets
+  const waterTarget = 400; // daily target (m³)
+
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [pumpStatus, setPumpStatus] = useState("Running");
+
+  const [todayGeneration, setTodayGeneration] = useState(null);
+  const [uptimePercent, setUptimePercent] = useState(null);
+  const [efficiencyPercent, setEfficiencyPercent] = useState(null);
+  const [waterDelivered, setWaterDelivered] = useState(null);
+
+  const [pumpPowerData, setPumpPowerData] = useState([]);
+  const [monthlyCosts, setMonthlyCosts] = useState([]);
+  const [solarIrradiance, setSolarIrradiance] = useState(null);
+
   useEffect(() => {
-    const fetchData = async () => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    async function loadData() {
       try {
-        const [statusRes, aiRes] = await Promise.all([
-          fetch("/api/status"),
-          fetch("/api/ai-status"),
+        const data = await fetchSolarData(latitude, longitude);
+        const hours = data.hourly.time;
+        const irradiance = data.hourly.global_tilted_irradiance; // W/m²
+        const now = new Date();
+        const todayStr = now.toISOString().split("T")[0];
+
+        // Filter today's data
+        const todayHours = [];
+        const todayIrr = [];
+        hours.forEach((t, i) => {
+          if (t.startsWith(todayStr)) {
+            todayHours.push(t);
+            todayIrr.push(irradiance[i]);
+          }
+        });
+
+        // Convert irradiance (W/m²) → kWh (per hour)
+        const hourlyPower = todayIrr.map((irr) => {
+          const kWh = (irr * panelArea * panelEfficiency) / 1000; // kW for 1h = kWh
+          return kWh;
+        });
+
+        // Daily generation
+        const gen = hourlyPower.reduce((a, b) => a + b, 0);
+        setTodayGeneration(gen.toFixed(2));
+
+        // Peak irradiance
+        setSolarIrradiance(Math.max(...todayIrr));
+
+        // Water delivery
+        const water = gen * pumpFlowRate;
+        setWaterDelivered(water.toFixed(2));
+
+        // Uptime (vs water target)
+        const uptime = (water / waterTarget) * 100;
+        setUptimePercent(Math.min(uptime, 100).toFixed(1));
+
+        // Efficiency (vs. max possible if panels were 100% efficient)
+        const theoreticalMax = todayIrr.reduce((sum, irr) => sum + (irr * panelArea) / 1000, 0);
+        const eff = (gen / theoreticalMax) * 100;
+        setEfficiencyPercent(Math.max(eff, 0).toFixed(1));
+
+        // Prepare hourly chart data
+        const chartData = todayHours.map((t, i) => ({
+          time: t.split("T")[1].slice(0, 5),
+          power: hourlyPower[i].toFixed(2),
+        }));
+        setPumpPowerData(chartData);
+
+        // Costs
+        const energyCost = gen * energyCostPerKWh;
+        const consumedWaterCost = water * waterCostPerCubicM;
+
+        setMonthlyCosts([
+          { item: "Fixed Setup Cost", amount: fixedSetupCost },
+          { item: "Renting Cost", amount: rentingCost },
+          { item: "Energy Cost", amount: Math.round(energyCost) },
+          { item: "Consumed Water Cost", amount: Math.round(consumedWaterCost) },
         ]);
-
-        const statusData = await statusRes.json();
-        const aiData = await aiRes.json();
-
-        setData((prev) => ({
-          ...prev,
-          ...statusData,
-          aiModel: aiData,
-        }));
-
-        setError(null);
       } catch (err) {
-        console.error("Backend fetch failed, falling back to synthetic data:", err);
-        setData(syntheticData);
-        setError("Using synthetic data (backend unreachable)");
-      } finally {
-        setLoading(false);
+        console.error("Error loading Open-Meteo data:", err);
       }
-    };
-
-    fetchData();
-    const interval = setInterval(fetchData, 15000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // --- MQTT Subscription (water level from ESP32) ---
-  useEffect(() => {
-    const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt"); 
-    // for local broker use: ws://localhost:9001
-
-    client.on("connect", () => {
-      console.log("✅ Connected to MQTT broker");
-      client.subscribe("esp32/water-level", (err) => {
-        if (!err) console.log("📡 Subscribed to esp32/water-level");
-      });
-    });
-
-    client.on("message", (topic, message) => {
-      if (topic === "esp32/water-level") {
-        const newLevel = parseFloat(message.toString());
-        console.log("📥 Water Level:", newLevel);
-        setData((prev) => ({
-          ...prev,
-          waterLevel: newLevel,
-        }));
-      }
-    });
-
-    return () => client.end();
-  }, []);
-
-  // --- Pump Control Handlers ---
-  const handlePumpAction = async (action) => {
-    try {
-      const res = await fetch(`/api/pump/${action}`, { method: "POST" });
-      if (!res.ok) throw new Error(`Failed: ${action}`);
-      setPumpState(action === "reset" ? "Idle" : action);
-    } catch (err) {
-      console.error("Pump control error:", err);
-      setError(`Pump control failed: ${action}`);
     }
-  };
 
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <p className="text-lg">Loading dashboard...</p>
-      </div>
-    );
-  }
+    loadData();
+  }, []);
+
+  const pieColors = ["#f97316", "#3b82f6"];
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6 text-center">
-        Smart Solar Dewatering Dashboard
-      </h1>
-
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-lg">
-          ⚠️ {error}
-        </div>
-      )}
-
-      {/* Grid Layout */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Water Level Card */}
-        <Card>
-          <CardHeader className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Droplets className="text-blue-500" />
-              Water Level
-            </CardTitle>
-            <RefreshCw
-              className="h-4 w-4 cursor-pointer"
-              onClick={() => window.location.reload()}
-            />
-          </CardHeader>
-          <CardContent>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${(data.waterLevel / 6) * 100}%` }}
-              className="h-24 bg-blue-300 rounded-lg"
-            />
-            <p className="text-center mt-2 text-lg">
-              {data.waterLevel.toFixed(2)} cm
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Pump Control */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="text-green-500" />
-              Pump Control
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <p className="text-center text-lg">State: {pumpState}</p>
-            <div className="flex justify-center gap-2">
-              <Button onClick={() => handlePumpAction("start")}>
-                <Play className="mr-1 h-4 w-4" /> Start
-              </Button>
-              <Button
-                onClick={() => handlePumpAction("stop")}
-                variant="destructive"
-              >
-                <StopCircle className="mr-1 h-4 w-4" /> Stop
-              </Button>
-              <Button
-                onClick={() => handlePumpAction("reset")}
-                variant="secondary"
-              >
-                Reset
-              </Button>
+    <div className="min-h-screen bg-gray-900 text-white">
+      {/* Header */}
+      <header className="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div className="max-w-[1920px] mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <div className="p-2 bg-orange-900 rounded-xl border border-orange-700">
+              <Sun className="h-8 w-8 text-orange-400" />
             </div>
-            <Button onClick={() => handlePumpAction("manual")}>
-              Manual Override
-            </Button>
-          </CardContent>
-        </Card>
+            <div>
+              <h1 className="text-xl font-bold">Solar Pump Vendor Dashboard</h1>
+              <p className="text-gray-400 text-sm">Real-time monitoring & analytics</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <PumpStatusBadge pumpStatus={pumpStatus} />
+            <div className="flex items-center space-x-1 text-gray-300">
+              <Clock className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                {currentTime.toLocaleString("en-IN", {
+                  timeZone: "Asia/Kolkata",
+                  weekday: "short",
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            </div>
+          </div>
+        </div>
+      </header>
 
-        {/* Solar Power */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="text-yellow-500" />
-              Solar Power
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-center text-2xl font-bold">
-              {data.solarPower} kW
+      <main className="max-w-[1920px] mx-auto px-6 py-6">
+        {/* Status Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <StatusCard icon={Sun} title="Solar Power" value={todayGeneration ?? "---"} unit="kWh" color="orange" />
+          <StatusCard icon={Activity} title="Uptime" value={uptimePercent ?? "---"} unit="%" color="purple" />
+          <StatusCard icon={Activity} title="Efficiency" value={efficiencyPercent ?? "---"} unit="%" color="cyan" />
+          <StatusCard icon={Droplets} title="Water Delivered" value={waterDelivered ?? "---"} unit="m³" color="blue" />
+          <StatusCard icon={MapPin} title="Location" value={locationName} unit="" color="orange" />
+        </div>
+
+        {/* Gen & Water */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-gradient-to-br from-orange-600 to-yellow-600 rounded-xl p-6 shadow-lg">
+            <h4 className="text-xl font-semibold mb-2">Today's Generation</h4>
+            <p className="text-3xl font-bold">{todayGeneration ? `${todayGeneration} kWh` : "---"}</p>
+            <p className="text-orange-100">
+              Peak Irradiance: {solarIrradiance ? `${solarIrradiance.toFixed(1)} W/m²` : "---"}
             </p>
-          </CardContent>
-        </Card>
+            <p className="text-sm mt-2">Daily Target: 400 kWh</p>
+          </div>
 
-        {/* CO₂ Saved */}
-        <Card>
-          <CardHeader>
-            <CardTitle>CO₂ Saved</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-center text-2xl font-bold">
-              {data.co2Saved} tons
-            </p>
-          </CardContent>
-        </Card>
+          <div className="bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl p-6 shadow-lg">
+            <h4 className="text-xl font-semibold mb-2">Water Delivery</h4>
+            <p className="text-3xl font-bold">{waterDelivered ? `${waterDelivered} m³` : "---"}</p>
+            <p className="text-blue-100">Target: {waterTarget} m³/day</p>
+          </div>
+        </div>
 
-        {/* System Health */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="text-red-500" />
-              System Health
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-center text-2xl">{data.systemHealth}</p>
-          </CardContent>
-        </Card>
+        {/* Charts & Costs */}
+        <div className="bg-gray-800 bg-opacity-50 rounded-xl p-6 shadow-lg mb-6">
+          <h3 className="text-xl font-semibold mb-4 flex items-center">
+            <DollarSign className="h-6 w-6 mr-2" /> Revenue & Analytics
+          </h3>
 
-        {/* Weather */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CloudSun className="text-orange-500" />
-              Weather
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-2xl">{data.weather.temp}°C</p>
-            <p>{data.weather.condition}</p>
-          </CardContent>
-        </Card>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* LineChart */}
+            <div className="bg-gray-900 rounded-xl p-4">
+              <h4 className="text-sm mb-2">Pump Power (Hourly)</h4>
+              <ResponsiveContainer width="100%" height={150}>
+                <LineChart data={pumpPowerData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                  <XAxis dataKey="time" stroke="#ccc" />
+                  <YAxis stroke="#ccc" />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="power" stroke="#f97316" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
 
-        {/* AI Model */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Cpu className="text-purple-500" />
-              AI Model
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>Status: {data.aiModel.status}</p>
-            <p>Accuracy: {data.aiModel.accuracy}</p>
-          </CardContent>
-        </Card>
+            {/* PieChart */}
+            <div className="bg-gray-900 rounded-xl p-4">
+              <h4 className="text-sm mb-2">Energy Source Distribution</h4>
+              <ResponsiveContainer width="100%" height={150}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: "Solar", value: todayGeneration ? Math.max(parseFloat(todayGeneration) * 0.6, 0) : 60 },
+                      { name: "Backup", value: todayGeneration ? Math.max(parseFloat(todayGeneration) * 0.4, 0) : 40 },
+                    ]}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={30}
+                    outerRadius={60}
+                    label={({ name, value, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                  >
+                    {[0, 1].map((i) => (
+                      <Cell key={i} fill={pieColors[i % pieColors.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value, name) => [`${value.toFixed(2)} kWh`, name]} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
 
-        {/* Demand Forecast */}
-        <Card className="md:col-span-2 lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Demand Forecast</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={data.demandForecast.map((y, i) => ({ x: i, y }))}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="x" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="y" stroke="#8884d8" />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Energy Production */}
-        <Card className="md:col-span-2 lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Energy Production</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart
-                data={data.energyProduction.map((y, i) => ({ x: i, y }))}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="x" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="y" stroke="#82ca9d" />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+            {/* Cost */}
+            <div className="bg-gray-900 rounded-xl p-4">
+              <h4 className="text-sm mb-2">Monthly Costs</h4>
+              <ul className="space-y-1 text-gray-300 text-sm">
+                {monthlyCosts.map((c, idx) => (
+                  <li key={idx} className="flex justify-between">
+                    <span>{c.item}</span>
+                    <span>₹{c.amount.toLocaleString()}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-3 pt-3 border-t border-gray-700 flex justify-between font-bold">
+                <span>Total</span>
+                <span>₹{monthlyCosts.reduce((sum, c) => sum + c.amount, 0).toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
+
+const StatusCard = ({ icon: Icon, title, value, unit, color }) => {
+  const colorMap = {
+    orange: "text-orange-400",
+    purple: "text-purple-400",
+    cyan: "text-cyan-400",
+    blue: "text-blue-400",
+  };
+
+  return (
+    <div className="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+      <p className="text-gray-400 text-sm mb-1">{title}</p>
+      <p className={`text-2xl font-bold ${colorMap[color]}`}>
+        {value} <span className="text-sm text-gray-500">{unit}</span>
+      </p>
+      <Icon className={`h-5 w-5 mt-2 ${colorMap[color]}`} />
+    </div>
+  );
+};
+
+const PumpStatusBadge = ({ pumpStatus }) => (
+  <div
+    className={`px-3 py-1 rounded-lg text-sm font-medium border ${
+      pumpStatus === "Running"
+        ? "bg-green-900 text-green-300 border-green-700"
+        : pumpStatus === "Idle"
+        ? "bg-yellow-900 text-yellow-300 border-yellow-700"
+        : "bg-red-900 text-red-300 border-red-700"
+    }`}
+  >
+    {pumpStatus}
+  </div>
+);
