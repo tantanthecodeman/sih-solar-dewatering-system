@@ -1,6 +1,7 @@
-Flask
+flask
 scikit-learn
 pandas
 numpy
 joblib
 requests
+paho-mqtt
