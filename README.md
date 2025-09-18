@@ -172,11 +172,13 @@ docker-compose up -d
 
 ![System Architecture](docs/architecture.png)
 
+![Circuit Diagram](docs/circuit_diagram.png)
+
 ---
 
 ## 🔄 Workflow    
 
-![Workflow / Flowchart](docs/flow_diagram.png)  
+![Workflow / Flowchart](docs/flow_diagram.jpg)  
 
 ---
 
