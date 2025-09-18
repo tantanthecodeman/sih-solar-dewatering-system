@@ -10,94 +10,90 @@ An **AI-powered IoT-based solar dewatering system** integrating **Next.js, React
 ├── ├── LICENSE
 ├── ├── README.md
 ├── ├── docs
-├── │   ├── architecture.png
-├── │   └── screenshots
-├── │       └── README.md
+├── │ ├── architecture.png
+├── │ └── screenshots
+├── │ └── README.md
 ├── ├── hardware
-├── │   ├── esp32-code
-├── │   │   └── main.ino
-├── │   ├── mqtt-broker
-├── │   │   ├── config
-├── │   │   │   └── mosquitto.conf
-├── │   │   └── docker-compose.yml
-├── │   └── node-red-dashboard
-├── │       └── solar_flow.json
+├── │ ├── esp32-code
+├── │ │ └── main.ino
+├── │ └── node-red-dashboard
+├── │ └── solar_flow.json
 ├── └── software
 ├── ├── Operational Dashboard
-├── │   ├── README.md
-├── │   ├── index.html
-├── │   ├── node-red-flow.json
-├── │   ├── package.json
-├── │   ├── postcss.config.js
-├── │   ├── src
-├── │   │   ├── App.jsx
-├── │   │   ├── components
-├── │   │   │   ├── AIStatus.jsx
-├── │   │   │   ├── Card.jsx
-├── │   │   │   ├── ConnectionStatus.jsx
-├── │   │   │   ├── IconBox.jsx
-├── │   │   │   ├── Metrics.jsx
-├── │   │   │   ├── MiniStatistics.jsx
-├── │   │   │   ├── PumpControl.jsx
-├── │   │   │   ├── SolarChart.jsx
-├── │   │   │   ├── ThemeToggle.jsx
-├── │   │   │   ├── WaterGauge.jsx
-├── │   │   │   └── Weather.jsx
-├── │   │   ├── index.css
-├── │   │   ├── main.jsx
-├── │   │   └── theme
-├── │   │       ├── additions
-├── │   │       │   └── card
-├── │   │       │       └── card.js
-├── │   │       ├── components
-├── │   │       │   ├── badge.js
-├── │   │       │   ├── button.js
-├── │   │       │   ├── input.js
-├── │   │       │   ├── link.js
-├── │   │       │   ├── progress.js
-├── │   │       │   ├── slider.js
-├── │   │       │   ├── switch.js
-├── │   │       │   └── textarea.js
-├── │   │       ├── foundations
-├── │   │       │   └── breakpoints.js
-├── │   │       ├── styles.js
-├── │   │       └── theme.js
-├── │   └── tailwind.config.js
+├── │ ├── README.md
+├── │ ├── index.html
+├── │ ├── node-red-flow.json
+├── │ ├── package.json
+├── │ ├── postcss.config.js
+├── │ ├── src
+├── │ │ ├── App.jsx
+├── │ │ ├── components
+├── │ │ │ ├── AIStatus.jsx
+├── │ │ │ ├── Card.jsx
+├── │ │ │ ├── ConnectionStatus.jsx
+├── │ │ │ ├── IconBox.jsx
+├── │ │ │ ├── Metrics.jsx
+├── │ │ │ ├── MiniStatistics.jsx
+├── │ │ │ ├── PumpControl.jsx
+├── │ │ │ ├── SolarChart.jsx
+├── │ │ │ ├── ThemeToggle.jsx
+├── │ │ │ ├── WaterGauge.jsx
+├── │ │ │ └── Weather.jsx
+├── │ │ ├── index.css
+├── │ │ ├── main.jsx
+├── │ │ └── theme
+├── │ │ ├── additions
+├── │ │ │ └── card
+├── │ │ │ └── card.js
+├── │ │ ├── components
+├── │ │ │ ├── badge.js
+├── │ │ │ ├── button.js
+├── │ │ │ ├── input.js
+├── │ │ │ ├── link.js
+├── │ │ │ ├── progress.js
+├── │ │ │ ├── slider.js
+├── │ │ │ ├── switch.js
+├── │ │ │ └── textarea.js
+├── │ │ ├── foundations
+├── │ │ │ └── breakpoints.js
+├── │ │ ├── styles.js
+├── │ │ └── theme.js
+├── │ └── tailwind.config.js
 ├── ├── README.md
 ├── ├── backend
-├── │   ├── app
-├── │   │   ├── init.py
-├── │   │   ├── models
-├── │   │   │   ├── init.py
-├── │   │   │   └── ai_predictor.py
-├── │   │   ├── routes
-├── │   │   │   ├── init.py
-├── │   │   │   ├── enhanced_dashboard.py
-├── │   │   │   └── pump_control.py
-├── │   │   └── services
-├── │   │       ├── init.py
-├── │   │       ├── ai_model_service.py
-├── │   │       └── mqtt_service.py
-├── │   ├── config.py
-├── │   ├── models
-├── │   │   ├── aiModel.py
-├── │   │   └── synthetic_solar_data_minute.csv
-├── │   ├── pump_predictions (3).csv
-├── │   ├── pump_simulated_predictions.csv
-├── │   ├── requirements.txt
-├── │   └── run.py
+├── │ ├── app
+├── │ │ ├── init.py
+├── │ │ ├── models
+├── │ │ │ ├── init.py
+├── │ │ │ └── ai_predictor.py
+├── │ │ ├── routes
+├── │ │ │ ├── init.py
+├── │ │ │ ├── enhanced_dashboard.py
+├── │ │ │ └── pump_control.py
+├── │ │ └── services
+├── │ │ ├── init.py
+├── │ │ ├── ai_model_service.py
+├── │ │ └── mqtt_service.py
+├── │ ├── config.py
+├── │ ├── models
+├── │ │ ├── aiModel.py
+├── │ │ └── synthetic_solar_data_minute.csv
+├── │ ├── pump_predictions (3).csv
+├── │ ├── pump_simulated_predictions.csv
+├── │ ├── requirements.txt
+├── │ └── run.py
 ├── └── vendor-dashboard
 ├── ├── README.md
 ├── ├── app
-├── │   ├── favicon.ico
-├── │   ├── globals.css
-├── │   ├── layout.js
-├── │   └── page.js
+├── │ ├── favicon.ico
+├── │ ├── globals.css
+├── │ ├── layout.js
+├── │ └── page.js
 ├── ├── eslint.config.mjs
 ├── ├── jsconfig.json
 ├── ├── next.config.mjs
 ├── ├── package.json
-└── └── postcss.config.mjs    
+└── └── postcss.config.mjs  
 ```
 
 ---
