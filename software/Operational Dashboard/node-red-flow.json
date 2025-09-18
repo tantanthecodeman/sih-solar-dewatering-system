@@ -1,0 +1,81 @@
+[
+  {
+    "id": "flow1",
+    "type": "tab",
+    "label": "Websocket MQTT Bridge",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "ws-in",
+    "type": "websocket in",
+    "z": "flow1",
+    "name": "WS In (/mqtt)",
+    "server": "",
+    "client": "",
+    "path": "/mqtt",
+    "wholemsg": "false",
+    "wires": [["ws-to-mqtt"]]
+  },
+  {
+    "id": "ws-out",
+    "type": "websocket out",
+    "z": "flow1",
+    "name": "WS Out (/mqtt)",
+    "server": "",
+    "client": "",
+    "path": "/mqtt",
+    "wires": []
+  },
+  {
+    "id": "mqtt-in",
+    "type": "mqtt in",
+    "z": "flow1",
+    "name": "MQTT: mine/sensors",
+    "topic": "mine/sensors",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "wires": [["ws-out"]]
+  },
+  {
+    "id": "mqtt-broker-bridge",
+    "type": "mqtt out",
+    "z": "flow1",
+    "name": "MQTT OUT: control",
+    "topic": "mine/pump/control",
+    "qos": "",
+    "retain": "",
+    "broker": "mqtt_broker",
+    "wires": []
+  },
+  {
+    "id": "ws-to-mqtt",
+    "type": "function",
+    "z": "flow1",
+    "name": "WS -> MQTT payload",
+    "func": "// If WS messages are plain strings like ON/OFF, forward as payload\nvar p = msg.payload;\nreturn { payload: p };",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "wires": [["mqtt-broker-bridge"]]
+  },
+  {
+    "id": "mqtt_broker",
+    "type": "mqtt-broker",
+    "name": "test.mosquitto.org",
+    "broker": "test.mosquitto.org",
+    "port": "1883",
+    "clientid": "",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true
+  }
+]

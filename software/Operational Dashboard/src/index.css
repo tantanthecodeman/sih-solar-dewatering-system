@@ -1,0 +1,25 @@
+/* Tailwind directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Apply a base background and text color to the entire app */
+body {
+  background-color: #111; /* A dark background from your theme */
+  color: #e0e0e0;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Optional: Keep your custom animated background if you like it */
+.bg-animated {
+  background: linear-gradient(45deg, #111 25%, #222 50%, #111 75%, #222 100%);
+  background-size: 200% 200%;
+  animation: bg-move 20s linear infinite;
+}
+
+@keyframes bg-move {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
