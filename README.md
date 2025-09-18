@@ -180,7 +180,7 @@ docker-compose up -d
 
 ## 🎥 Demo & Presentation  
 
-- **Video Demo** → [Add Link Here]   
+- **Video Demo** → [Watch Demo](https://youtu.be/X9RxbYzkuE4)   
 - **Presentation** → [Download the presentation](https://github.com/tantanthecodeman/sih-solar-dewatering-system/raw/main/SIH_BrainDraft_072.pptx)
 
 ---
